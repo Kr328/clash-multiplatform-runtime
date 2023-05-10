@@ -23,8 +23,8 @@ jobs:
 #        uses: msys2/setup-msys2@v2
 #        with:
 #          install: zip
-#      - name: Install Tools
-#        run: pacman -Syy zip
+      - name: Install Tools
+        run: choco install zip
       - name: Build
         run: .\build.bat
       - name: Rename Artifact
