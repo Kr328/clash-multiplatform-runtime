@@ -1,7 +1,5 @@
 on:
-  push:
-    branches:
-      - add-workflow
+  workflow_dispatch: {}
 
 jobs:
   build_windows_amd64:
