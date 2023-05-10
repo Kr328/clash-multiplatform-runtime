@@ -19,14 +19,16 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install Tools
-        run: |
-          pacman -Sy zip
+#      - name: Setup Msys2
+#        uses: msys2/setup-msys2@v2
+#        with:
+#          install: zip
+#      - name: Install Tools
+#        run: pacman -Syy zip
       - name: Build
-        run: |
-          ./build.bat || exit 1
-          
-          move bundle.zip clash-multiplatform-runtime-windows-amd64.zip
+        run: ./build.bat
+      - name: Rename Artifact
+        run: mv bundle.zip clash-multiplatform-runtime-windows-amd64.zip
       - name: Publish
         uses: marvinpinto/action-automatic-releases@latest
         with:
