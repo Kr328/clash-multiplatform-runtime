@@ -1,0 +1,36 @@
+on:
+  push:
+    branches:
+      - add-workflow
+
+jobs:
+  build_windows_amd64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install Tools
+        run: |
+          pacman -Sy zip
+      - name: Build
+        run: |
+          ./build.bat || exit 1
+          
+          move bundle.zip clash-multiplatform-runtime-windows-amd64.zip
+      - name: Publish
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: clash-multiplatform-runtime-windows-amd64.zip
