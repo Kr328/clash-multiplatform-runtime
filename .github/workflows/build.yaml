@@ -4,6 +4,9 @@ on:
     types:
       - published
 
+permissions:
+  contents: write
+
 jobs:
   build_windows_amd64:
     runs-on: windows-latest
@@ -27,9 +30,9 @@ jobs:
         run: mv bundle.zip clash-multiplatform-runtime-windows-amd64.zip
       - name: Publish
         if: github.event_name == 'release'
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          artifacts: clash-multiplatform-runtime-windows-amd64.zip
+          files: clash-multiplatform-runtime-windows-amd64.zip
   build_linux_amd64:
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +53,6 @@ jobs:
         run: mv bundle.zip clash-multiplatform-runtime-linux-amd64.zip
       - name: Publish
         if: github.event_name == 'release'
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          artifacts: clash-multiplatform-runtime-windows-amd64.zip
+          files: clash-multiplatform-runtime-linux-amd64.zip
