@@ -19,21 +19,37 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-#      - name: Setup Msys2
-#        uses: msys2/setup-msys2@v2
-#        with:
-#          install: zip
       - name: Install Tools
-        run: choco install zip
+        run: choco install --yes zip
       - name: Build
         run: .\build.bat
       - name: Rename Artifact
         run: mv bundle.zip clash-multiplatform-runtime-windows-amd64.zip
       - name: Publish
-        uses: marvinpinto/action-automatic-releases@latest
+        if: github.event_name == 'release'
+        uses: ncipollo/release-action@v1
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
-          title: "Development Build"
-          files: clash-multiplatform-runtime-windows-amd64.zip
+          artifacts: clash-multiplatform-runtime-windows-amd64.zip
+  build_linux_amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Build
+        run: ./build.sh
+      - name: Rename Artifiact
+        run: mv bundle.zip clash-multiplatform-runtime-linux-amd64.zip
+      - name: Publish
+        if: github.event_name == 'release'
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: clash-multiplatform-runtime-windows-amd64.zip

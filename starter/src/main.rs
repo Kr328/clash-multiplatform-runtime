@@ -88,10 +88,9 @@ fn main() {
     let options = Options::parse();
 
     if let Err(err) = run_app(&options) {
+        _ = std::io::stderr().write_fmt(format_args!("[Starter] err={} | Launch failed", err));
+
         #[cfg(windows)]
         win32::ui::show_error_message(&err.to_string());
-
-        #[cfg(target_os = "linux")]
-        std::io::stderr().write_all(err.to_string().as_bytes()).ok();
     }
 }
