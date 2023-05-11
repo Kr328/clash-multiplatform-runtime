@@ -29,7 +29,7 @@ impl StartupParameters {
             options.base_directory.to_owned()
         };
         let starter = current_exe()?.to_string_without_extend_length_mark();
-        let starter_arguments = std::env::args().collect::<Vec<_>>();
+        let starter_arguments = std::env::args().skip(1).collect::<Vec<_>>();
 
         return Ok(StartupParameters {
             base_directory,
