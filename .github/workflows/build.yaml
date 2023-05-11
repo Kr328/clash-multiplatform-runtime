@@ -1,8 +1,8 @@
 on:
   workflow_dispatch: {}
-  push:
-    branches:
-      - add-workflow
+  release:
+    types:
+      - published
 
 jobs:
   build_windows_amd64:
