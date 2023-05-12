@@ -43,7 +43,7 @@ impl StartupParameters {
     pub fn new_java_object(&self, env: *mut JNIEnv) -> jobject {
         let base_directory = self.base_directory.to_java_string(env);
         let no_shortcut = if self.no_shortcut { JNI_TRUE } else { JNI_FALSE };
-        let hide_window = if self.no_shortcut { JNI_TRUE } else { JNI_FALSE };
+        let hide_window = if self.hide_window { JNI_TRUE } else { JNI_FALSE };
         let starter = self.starter.to_java_string(env);
         let c_string = jcall!(env, FindClass, cstr!("java/lang/String").as_ptr());
         let starter_arguments = jcall!(
