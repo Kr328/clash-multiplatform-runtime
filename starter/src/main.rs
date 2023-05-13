@@ -27,6 +27,7 @@ mod startup;
 mod utils;
 
 const APP_JAR_NAME: &str = "clash-multiplatform.jar";
+const MAX_HEAP_USAGE_MB: usize = 256;
 
 fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
     let app_dir = current_app_dir().map_err(|e| e.with_message("App dir not found"))?;
@@ -41,12 +42,15 @@ fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
     linux::redirect::redirect_standard_output_to_file(&Path::new(&parameters.base_directory).join("app.log")).ok();
 
     let classpath_opt = format!("-Djava.class.path={}", classes_jar.to_string_without_extend_length_mark());
+    let max_heap_opt = format!("-Xmx{}m", MAX_HEAP_USAGE_MB);
+
+    let init_opts: [&str; 2] = [&classpath_opt, &max_heap_opt];
 
     #[cfg(windows)]
-    let runtime = win32::jvm::load_jvm(&app_dir, &[classpath_opt.as_str()]).map_err(|e| e.with_message("Load JavaRuntime"))?;
+    let runtime = win32::jvm::load_jvm(&app_dir, &init_opts).map_err(|e| e.with_message("Load JavaRuntime"))?;
 
     #[cfg(target_os = "linux")]
-    let runtime = linux::jvm::load_jvm(&app_dir, &[classpath_opt.as_str()]).map_err(|e| e.with_message("Load JavaRuntime"))?;
+    let runtime = linux::jvm::load_jvm(&app_dir, &init_opts).map_err(|e| e.with_message("Load JavaRuntime"))?;
 
     let c_main = jcall!(runtime.env, FindClass, cstr!("com/github/kr328/clash/MainKt").as_ptr());
     if c_main == null_mut() {
