@@ -55,7 +55,18 @@ fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
     }
 
     #[cfg(target_os = "linux")]
-    linux::redirect::redirect_standard_output_to_file(&Path::new(&parameters.base_directory).join("app.log")).ok();
+    {
+        use linux::redirect::*;
+        use std::os::unix::io::{AsRawFd, IntoRawFd};
+
+        let _ = set_standard_input_output(
+            StandardInputOutput::Input,
+            open_null_device(File::options().read(true)).into_raw_fd(),
+        );
+
+        let _ = set_standard_input_output(StandardInputOutput::Output, writer.as_raw_fd());
+        let _ = set_standard_input_output(StandardInputOutput::Error, writer.as_raw_fd());
+    }
 
     let classpath_opt = format!("-Djava.class.path={}", classes_jar.to_string_without_extend_length_mark());
     let max_heap_opt = format!("-Xmx{}m", MAX_HEAP_USAGE_MB);
