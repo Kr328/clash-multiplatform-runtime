@@ -1,6 +1,8 @@
-use cstr::cstr;
-use libc::{dup2, open, O_CREAT, O_TRUNC, O_WRONLY, STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO};
 use std::{error::Error, ffi::CString, io, path::Path};
+
+use cstr::cstr;
+
+use libc::{dup2, open, O_CREAT, O_TRUNC, O_WRONLY, STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO};
 
 pub fn redirect_standard_output_to_file(path: &Path) -> Result<(), Box<dyn Error>> {
     let path = CString::new(path.to_str().unwrap())?;

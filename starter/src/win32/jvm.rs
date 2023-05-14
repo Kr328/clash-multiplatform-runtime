@@ -8,7 +8,6 @@ use std::{
     ptr::null_mut,
 };
 
-use crate::utils::strings::PathExt;
 use cstr::cstr;
 use jni_sys::{jint, JNIEnv, JavaVM, JavaVMInitArgs, JavaVMOption, JNI_OK, JNI_VERSION_1_8};
 use windows_sys::Win32::{
@@ -16,7 +15,7 @@ use windows_sys::Win32::{
     System::LibraryLoader::{GetProcAddress, LoadLibraryW},
 };
 
-use crate::win32::strings::Win32Strings;
+use crate::{utils::strings::PathExt, win32::strings::Win32Strings};
 
 fn find_jvm_dll_from_jre_path(jre_path: &Path) -> Option<PathBuf> {
     let jvm_dll_path = jre_path.join("bin\\server\\jvm.dll");

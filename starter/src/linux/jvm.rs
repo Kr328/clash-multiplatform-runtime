@@ -1,6 +1,3 @@
-use cstr::cstr;
-use jni_sys::{jint, JNIEnv, JavaVM, JavaVMInitArgs, JavaVMOption, JNI_FALSE, JNI_OK, JNI_VERSION_1_8};
-use libc::{dlerror, dlopen, dlsym, RTLD_NOW};
 use std::{
     error::Error,
     ffi::{c_void, CString},
@@ -8,6 +5,11 @@ use std::{
     path::{Path, PathBuf},
     ptr::null_mut,
 };
+
+use cstr::cstr;
+use jni_sys::{jint, JNIEnv, JavaVM, JavaVMInitArgs, JavaVMOption, JNI_FALSE, JNI_OK, JNI_VERSION_1_8};
+
+use libc::{dlerror, dlopen, dlsym, RTLD_NOW};
 
 pub struct JavaRuntime {
     jvm_handle: *mut c_void,

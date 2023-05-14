@@ -1,18 +1,22 @@
-use std::{error::Error, io, path::Path, ptr::null_mut};
+use std::{error::Error, fs::OpenOptions, io, os::windows::io::RawHandle};
 
-use cstr::cstr;
 use windows_sys::Win32::{
-    Foundation::{GENERIC_READ, GENERIC_WRITE, HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE, SetHandleInformation, TRUE},
-    Storage::FileSystem::{
-        CREATE_ALWAYS, CreateFileA, CreateFileW, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING,
-    },
+    Foundation::{SetHandleInformation, FALSE, HANDLE, HANDLE_FLAG_INHERIT, TRUE},
     System::Console::{AllocConsole, GetConsoleWindow, SetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
     UI::WindowsAndMessaging::{ShowWindow, SW_HIDE},
 };
 
-use crate::win32::strings::Win32Strings;
+pub enum StandardInputOutput {
+    Input,
+    Output,
+    Error,
+}
 
-pub fn redirect_standard_output_to_file(path: &Path) -> Result<(), Box<dyn Error>> {
+pub fn open_null_device(opt: &OpenOptions) -> std::fs::File {
+    opt.open("nul:").unwrap()
+}
+
+pub fn set_standard_input_output(stdio: StandardInputOutput, fd: RawHandle) -> Result<(), Box<dyn Error>> {
     unsafe {
         if AllocConsole() == TRUE {
             let console = GetConsoleWindow();
@@ -21,42 +25,20 @@ pub fn redirect_standard_output_to_file(path: &Path) -> Result<(), Box<dyn Error
         }
     }
 
-    let path = path.to_str().unwrap().to_win32_utf16();
+    let id = match stdio {
+        StandardInputOutput::Input => STD_INPUT_HANDLE,
+        StandardInputOutput::Output => STD_OUTPUT_HANDLE,
+        StandardInputOutput::Error => STD_ERROR_HANDLE,
+    };
 
     unsafe {
-        let handle = CreateFileW(
-            path.as_ptr(),
-            GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_DELETE,
-            null_mut(),
-            CREATE_ALWAYS,
-            0,
-            0,
-        );
-        if handle == INVALID_HANDLE_VALUE {
+        if SetHandleInformation(fd as HANDLE, HANDLE_FLAG_INHERIT, TRUE as u32) == FALSE {
             return Err(io::Error::last_os_error().into());
         }
 
-        SetHandleInformation(handle, HANDLE_FLAG_INHERIT, TRUE as u32);
-
-        SetStdHandle(STD_OUTPUT_HANDLE, handle);
-        SetStdHandle(STD_ERROR_HANDLE, handle);
-    }
-
-    unsafe {
-        let nul = CreateFileA(
-            cstr!("nul:").as_ptr().cast(),
-            GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            null_mut(),
-            OPEN_EXISTING,
-            0,
-            0,
-        );
-
-        SetHandleInformation(nul, HANDLE_FLAG_INHERIT, TRUE as u32);
-
-        SetStdHandle(STD_INPUT_HANDLE, nul);
+        if SetStdHandle(id, fd as HANDLE) == FALSE {
+            return Err(io::Error::last_os_error().into());
+        }
     }
 
     Ok(())

@@ -1,4 +1,4 @@
-use windows_sys::Win32::UI::WindowsAndMessaging::{MB_OK, MessageBoxW};
+use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_OK};
 
 use crate::win32::strings::Win32Strings;
 
