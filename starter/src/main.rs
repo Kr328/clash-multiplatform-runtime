@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 
-use std::{error::Error, fs::File, io::Write, path::Path, ptr::null_mut};
+use std::{error::Error, fs::File, io::Write, path::Path, process::exit, ptr::null_mut};
 
 use clap::Parser;
 use cstr::cstr;
@@ -124,8 +124,11 @@ fn main() {
 
     if let Err(err) = run_app(&options) {
         _ = std::io::stderr().write_fmt(format_args!("[Starter] err={} | Launch failed", err));
+        _ = std::io::stderr().flush();
 
         #[cfg(windows)]
         win32::ui::show_error_message(&err.to_string());
+
+        exit(1)
     }
 }
