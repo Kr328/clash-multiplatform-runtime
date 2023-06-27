@@ -68,7 +68,14 @@ fn find_jvm_so(app_dir: &Path) -> Result<PathBuf, Box<dyn Error>> {
 }
 
 pub fn load_jvm(app_dir: &Path, args: &[&str]) -> Result<JavaRuntime, Box<dyn Error>> {
-    let jvm_so = CString::new(find_jvm_so(app_dir)?.to_string_lossy().to_string())?;
+    let jvm_so = find_jvm_so(app_dir)?;
+
+    std::env::set_var(
+        "LD_LIBRARY_PATH",
+        jvm_so.parent().unwrap().to_str().unwrap().to_owned() + ";" + &std::env::var("LD_LIBRARY_PATH").unwrap_or("".to_owned()),
+    );
+
+    let jvm_so = CString::new(jvm_so.to_string_lossy().to_string())?;
 
     unsafe {
         let jvm_handle = dlopen(jvm_so.as_ptr(), RTLD_NOW);
