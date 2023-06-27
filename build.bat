@@ -16,7 +16,7 @@ rmdir /S /Q build\jre
 
 jlink --add-modules java.base,java.desktop,java.logging ^
   --output build\jre ^
-  --compress=2 --ignore-signing-information ^
+  --ignore-signing-information ^
   --no-header-files --no-man-pages --strip-debug ^
   --verbose || exit 1
 
