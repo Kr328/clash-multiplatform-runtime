@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 
-use std::{error::Error, fs::File, io::Write, path::Path, process::exit, ptr::null_mut};
+use std::{error::Error, io::Write, path::Path, process::exit, ptr::null_mut};
 
 use clap::Parser;
 use cstr::cstr;
@@ -8,7 +8,7 @@ use jni_sys::JNI_TRUE;
 
 use crate::{
     dirs::current_app_dir,
-    logging::redirect_pipe_logfile,
+    logging::{redirect_stderr_to_logfile, redirect_stdout_to_logfile},
     metadata::resolve_app_metadata,
     options::Options,
     startup::StartupParameters,
@@ -37,36 +37,8 @@ fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
     let metadata = resolve_app_metadata(&classes_jar).map_err(|e| e.with_message("Resolve app metadata"))?;
     let parameters = StartupParameters::new(options, &metadata).map_err(|e| e.with_message("Resolve startup parameters"))?;
 
-    let (reader, writer) = os_pipe::pipe()?;
-    let redirector = redirect_pipe_logfile(reader, &Path::new(&parameters.base_directory));
-
-    #[cfg(windows)]
-    {
-        use std::os::windows::io::{AsRawHandle, IntoRawHandle};
-        use win32::redirect::*;
-
-        let _ = set_standard_input_output(
-            StandardInputOutput::Input,
-            open_null_device(File::options().read(true)).into_raw_handle(),
-        );
-
-        let _ = set_standard_input_output(StandardInputOutput::Output, writer.as_raw_handle());
-        let _ = set_standard_input_output(StandardInputOutput::Error, writer.as_raw_handle());
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        use linux::redirect::*;
-        use std::os::unix::io::{AsRawFd, IntoRawFd};
-
-        let _ = set_standard_input_output(
-            StandardInputOutput::Input,
-            open_null_device(File::options().read(true)).into_raw_fd(),
-        );
-
-        let _ = set_standard_input_output(StandardInputOutput::Output, writer.as_raw_fd());
-        let _ = set_standard_input_output(StandardInputOutput::Error, writer.as_raw_fd());
-    }
+    let _ = redirect_stdout_to_logfile(&Path::new(&parameters.base_directory));
+    let _ = redirect_stderr_to_logfile(&Path::new(&parameters.base_directory));
 
     let classpath_opt = format!("-Djava.class.path={}", classes_jar.to_string_without_extend_length_mark());
     let max_heap_opt = format!("-Xmx{}m", MAX_HEAP_USAGE_MB);
@@ -111,10 +83,6 @@ fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
 
         return Err("Unexpected exception".into());
     }
-
-    drop(writer);
-
-    let _ = redirector.join();
 
     Ok(())
 }

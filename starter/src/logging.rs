@@ -1,26 +1,27 @@
 use std::{
+    error::Error,
     fs::File,
+    io,
     io::{BufRead, Write},
+    os::fd::IntoRawFd,
     path::Path,
 };
-
-use os_pipe::PipeReader;
 
 const MAX_LOGFILE_LENGTH: usize = 20 * 1024 * 1024;
 
 struct Discard {}
 
 impl Write for Discard {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         return Ok(buf.len());
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
+    fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
 }
 
-fn open_logfile_or_discard(base_dir: &Path) -> Box<dyn Write> {
+fn open_stdout_logfile_or_discard(base_dir: &Path) -> Box<dyn Write> {
     let new_file = base_dir.join("app.log");
     let old_file = base_dir.join("app.log.old");
     if new_file.exists() {
@@ -35,12 +36,19 @@ fn open_logfile_or_discard(base_dir: &Path) -> Box<dyn Write> {
     }
 }
 
-pub fn redirect_pipe_logfile(pipe: PipeReader, base_dir: &Path) -> std::thread::JoinHandle<()> {
+pub fn redirect_stdout_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>> {
     let base_dir = base_dir.to_path_buf();
+    let (stdout_reader, stdout_writer) = os_pipe::pipe()?;
 
-    return std::thread::spawn(move || {
-        let mut reader = std::io::BufReader::new(pipe);
-        let mut writer: Box<dyn Write> = open_logfile_or_discard(&base_dir);
+    #[cfg(target_os = "linux")]
+    crate::linux::redirect::set_standard_input_output(
+        crate::linux::redirect::StandardOutputID::Output,
+        stdout_writer.into_raw_fd(),
+    )?;
+
+    std::thread::spawn(move || {
+        let mut reader = io::BufReader::new(stdout_reader);
+        let mut writer: Box<dyn Write> = open_stdout_logfile_or_discard(&base_dir);
 
         let mut line = Vec::new();
         let mut written = 0usize;
@@ -65,9 +73,22 @@ pub fn redirect_pipe_logfile(pipe: PipeReader, base_dir: &Path) -> std::thread::
                 Err(_) => true,
             };
             if reopen {
-                writer = open_logfile_or_discard(&base_dir);
+                writer = open_stdout_logfile_or_discard(&base_dir);
                 written = 0;
             }
         }
     });
+
+    return Ok(());
+}
+
+pub fn redirect_stderr_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>> {
+    let file = File::options()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(base_dir.join("app_err.log"))?;
+
+    #[cfg(target_os = "linux")]
+    crate::linux::redirect::set_standard_input_output(crate::linux::redirect::StandardOutputID::Error, file.into_raw_fd())
 }
