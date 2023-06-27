@@ -3,7 +3,6 @@ use std::{
     fs::File,
     io,
     io::{BufRead, Write},
-    os::fd::IntoRawFd,
     path::Path,
 };
 
@@ -41,10 +40,24 @@ pub fn redirect_stdout_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>>
     let (stdout_reader, stdout_writer) = os_pipe::pipe()?;
 
     #[cfg(target_os = "linux")]
-    crate::linux::redirect::set_standard_input_output(
-        crate::linux::redirect::StandardOutputID::Output,
-        stdout_writer.into_raw_fd(),
-    )?;
+    {
+        use std::os::fd::IntoRawFd;
+
+        crate::linux::redirect::set_standard_input_output(
+            crate::linux::redirect::StandardOutputID::Output,
+            stdout_writer.into_raw_fd(),
+        )?;
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::IntoRawHandle;
+
+        crate::win32::redirect::set_standard_input_output(
+            crate::win32::redirect::StandardInputOutput::Output,
+            stdout_writer.into_raw_handle(),
+        )?;
+    }
 
     std::thread::spawn(move || {
         let mut reader = io::BufReader::new(stdout_reader);
@@ -90,5 +103,19 @@ pub fn redirect_stderr_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>>
         .open(base_dir.join("app_err.log"))?;
 
     #[cfg(target_os = "linux")]
-    crate::linux::redirect::set_standard_input_output(crate::linux::redirect::StandardOutputID::Error, file.into_raw_fd())
+    {
+        use std::os::fd::IntoRawFd;
+
+        crate::linux::redirect::set_standard_input_output(crate::linux::redirect::StandardOutputID::Error, file.into_raw_fd())
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::IntoRawHandle;
+
+        crate::win32::redirect::set_standard_input_output(
+            crate::win32::redirect::StandardInputOutput::Error,
+            file.into_raw_handle(),
+        )
+    }
 }
