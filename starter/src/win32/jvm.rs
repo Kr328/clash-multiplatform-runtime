@@ -11,8 +11,8 @@ use std::{
 use cstr::cstr;
 use jni_sys::{jint, JNIEnv, JavaVM, JavaVMInitArgs, JavaVMOption, JNI_OK, JNI_VERSION_1_8};
 use windows_sys::Win32::{
-    Foundation::HMODULE,
-    System::LibraryLoader::{GetProcAddress, LoadLibraryW},
+    Foundation::{HANDLE, HMODULE},
+    System::LibraryLoader::{GetProcAddress, LoadLibraryExW},
 };
 
 use crate::{utils::strings::PathExt, win32::strings::Win32Strings};
@@ -102,7 +102,7 @@ pub fn load_jvm(app_root: &Path, args: &[&str]) -> Result<JavaRuntime, Box<dyn E
     let jvm_module = unsafe {
         let jvm_dll_path = jvm_dll_path.to_win32_utf16();
 
-        LoadLibraryW(jvm_dll_path.as_ptr())
+        LoadLibraryExW(jvm_dll_path.as_ptr(), HANDLE::default(), 0)
     };
     if jvm_module == 0 {
         return Err(Box::new(io::Error::last_os_error()));
