@@ -96,11 +96,12 @@ pub fn redirect_stdout_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>>
 }
 
 pub fn redirect_stderr_to_logfile(base_dir: &Path) -> Result<(), Box<dyn Error>> {
-    let file = File::options()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(base_dir.join("app_err.log"))?;
+    let log_file = base_dir.join("app_err.log");
+    if log_file.exists() {
+        let _ = std::fs::rename(&log_file, base_dir.join("app_err.log.old"));
+    }
+
+    let file = File::options().write(true).truncate(true).create(true).open(log_file)?;
 
     #[cfg(target_os = "linux")]
     {
