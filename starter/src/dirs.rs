@@ -18,7 +18,7 @@ pub fn default_base_dir(metadata: &Metadata) -> Result<PathBuf, Box<dyn Error>> 
     let local_dir = crate::win32::dirs::current_user_local_directory()?;
 
     #[cfg(target_os = "linux")]
-    let local_dir = crate::linux::dirs::current_user_local_directory()?;
+    let local_dir = crate::linux::dirs::current_user_config_directory()?;
 
     if metadata.is_premium {
         Ok(local_dir.join(BASE_DIR_PREMIUM))

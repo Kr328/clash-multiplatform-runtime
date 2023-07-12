@@ -36,9 +36,12 @@ fn run_app(options: &Options) -> Result<(), Box<dyn Error>> {
     let classes_jar = app_dir.join(APP_JAR_NAME);
     let metadata = resolve_app_metadata(&classes_jar).map_err(|e| e.with_message("Resolve app metadata"))?;
     let parameters = StartupParameters::new(options, &metadata).map_err(|e| e.with_message("Resolve startup parameters"))?;
+    let base_directory = Path::new(&parameters.base_directory);
 
-    let _ = redirect_stdout_to_logfile(&Path::new(&parameters.base_directory));
-    let _ = redirect_stderr_to_logfile(&Path::new(&parameters.base_directory));
+    std::fs::create_dir_all(base_directory)?;
+
+    let _ = redirect_stdout_to_logfile(base_directory);
+    let _ = redirect_stderr_to_logfile(base_directory);
 
     let classpath_opt = format!("-Djava.class.path={}", classes_jar.to_string_without_extend_length_mark());
     let max_heap_opt = format!("-Xmx{}m", MAX_HEAP_USAGE_MB);
